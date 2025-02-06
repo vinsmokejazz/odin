@@ -161,3 +161,4 @@ document.getElementById("restart-button").addEventListener("click", () => {
   GameController.resetGame();
   DisplayController.renderBoard();
 });
+//need understand just logic
