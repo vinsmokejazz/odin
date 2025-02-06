@@ -1,30 +1,54 @@
+// Gameboard Module
 const Gameboard = (() => {
-  const board = Array(9).fill(null);
+  const board = Array(9).fill(null); // Represents a 3x3 grid
 
   const getBoard = () => board;
 
   const markCell = (index, marker) => {
     if (board[index] === null) {
       board[index] = marker;
-      return true;
+      return true; // Successfully marked
     }
-    return false;
+    return false; // Cell already occupied
   };
 
   const resetBoard = () => {
     board.fill(null);
   };
-  return { getBoard, markCell, resetBoard }
+
+  return { getBoard, markCell, resetBoard };
 })();
 
+// Player Factory
 const Player = (name, marker) => {
   return { name, marker };
 };
 
+// AI Controller Module
+const AIController = (() => {
+  const makeMove = () => {
+    const board = Gameboard.getBoard();
+    const emptyCells = board.map((cell, index) => cell === null ? index : null).filter(val => val !== null);
+    if (emptyCells.length > 0) {
+      const randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+      GameController.playTurn(randomIndex);
+      DisplayController.renderBoard();
+    }
+  };
+
+  return { makeMove };
+})();
+
+// Game Controller Module
 const GameController = (() => {
-  const player1 = Player("Player 1", "X");
-  const player2 = Player("Player 2", "O");
-  let currentPlayer = player1;
+  let player1, player2, currentPlayer, isAIOpponent;
+
+  const initializePlayers = (name1, name2, aiOpponent = false) => {
+    player1 = Player(name1 || "Player 1", "X");
+    player2 = Player(name2 || (aiOpponent ? "AI" : "Player 2"), "O");
+    currentPlayer = player1;
+    isAIOpponent = aiOpponent;
+  };
 
   const switchPlayer = () => {
     currentPlayer = currentPlayer === player1 ? player2 : player1;
@@ -56,19 +80,31 @@ const GameController = (() => {
     if (Gameboard.markCell(index, currentPlayer.marker)) {
       const result = checkWin();
       if (result) {
-        console.log(result === "tie" ? "It's a tie!" : `${result.name} wins!`);
+        DisplayController.showResult(result);
         Gameboard.resetBoard();
       } else {
         switchPlayer();
+        DisplayController.updateMessage();
+        if (isAIOpponent && currentPlayer === player2) {
+          setTimeout(() => AIController.makeMove(), 500); // AI makes a move after a short delay
+        }
       }
-    } else {
-      console.log("Cell already occupied!");
     }
   };
 
-  return { playTurn, getCurrentPlayer: () => currentPlayer };
+  return {
+    initializePlayers,
+    playTurn,
+    getCurrentPlayer: () => currentPlayer,
+    resetGame: () => {
+      Gameboard.resetBoard();
+      currentPlayer = player1;
+      DisplayController.updateMessage();
+    },
+  };
 })();
 
+// Display Controller Module
 const DisplayController = (() => {
   const boardElement = document.querySelector(".gameboard");
   const messageElement = document.querySelector(".message");
@@ -81,8 +117,10 @@ const DisplayController = (() => {
       cellElement.classList.add("cell");
       cellElement.textContent = cell || "";
       cellElement.addEventListener("click", () => {
-        GameController.playTurn(index);
-        renderBoard();
+        if (!GameController.getCurrentPlayer().name.includes("AI")) {
+          GameController.playTurn(index);
+          renderBoard();
+        }
       });
       boardElement.appendChild(cellElement);
     });
@@ -93,13 +131,33 @@ const DisplayController = (() => {
     messageElement.textContent = `${currentPlayer.name}'s turn (${currentPlayer.marker})`;
   };
 
+  const showResult = (result) => {
+    if (result === "tie") {
+      messageElement.textContent = "It's a tie!";
+    } else {
+      messageElement.textContent = `${result.name} wins!`;
+    }
+  };
+
   const init = () => {
     renderBoard();
     updateMessage();
   };
 
-  return { init };
+  return { init, renderBoard, updateMessage, showResult };
 })();
 
-// Initialize the game
-DisplayController.init();
+// Event Listeners
+document.getElementById("start-button").addEventListener("click", () => {
+  const player1Name = document.getElementById("player1").value;
+  const player2Name = document.getElementById("player2").value;
+  const aiOpponent = confirm("Play against AI?");
+  GameController.initializePlayers(player1Name, aiOpponent ? "" : player2Name, aiOpponent);
+  DisplayController.init();
+  document.getElementById("restart-button").style.display = "block";
+});
+
+document.getElementById("restart-button").addEventListener("click", () => {
+  GameController.resetGame();
+  DisplayController.renderBoard();
+});
