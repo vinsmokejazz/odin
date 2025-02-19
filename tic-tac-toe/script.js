@@ -9,7 +9,7 @@ const Gameboard = (() => {
       board[index] = marker;
       return true; // Successfully marked
     }
-    return false; // Cell already occupied
+    return false; // Cell already occupied so return
   };
 
   const resetBoard = () => {
