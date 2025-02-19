@@ -9,7 +9,7 @@ const Gameboard = (() => {
       board[index] = marker;
       return true; // Successfully marked
     }
-    return false; // Cell already occupied
+    return false; // Cell already occupied so return
   };
 
   const resetBoard = () => {
@@ -161,3 +161,4 @@ document.getElementById("restart-button").addEventListener("click", () => {
   GameController.resetGame();
   DisplayController.renderBoard();
 });
+//need understand just logic
